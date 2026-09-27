@@ -68,3 +68,9 @@
 }
 
 .dashboard-month-cell-items .dashboard-deadline-mark{pointer-events:auto;cursor:pointer}
+
+.dashboard-month-week .dashboard-month-event-bar,.dashboard-month-week .dashboard-mark{font-family:inherit;font-size:14px;font-weight:550}
+.dashboard-month-week .dashboard-mark{border:0;text-align:left}
+.dashboard-month-week .dashboard-mark b{font-weight:600}
+.dashboard-month-cell-items .dashboard-month-task-mark{pointer-events:auto;cursor:pointer}
+@media(max-width:600px){.dashboard-month-week .dashboard-month-event-bar{font-size:12px}.dashboard-month-week .dashboard-mark{font-size:0;line-height:0;color:transparent}}
