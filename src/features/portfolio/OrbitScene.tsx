@@ -129,14 +129,14 @@ export default function OrbitScene() {
     ])
 
     let disposed = false
-    let texturesLoaded = 0
     const loader=new THREE.TextureLoader()
-    const galaxyTextures=['galaxy-silver-v1.png','galaxy-dust-v1.png','galaxy-nebula-v1.png'].map(file=>loader.load(
+    const galaxyTextures=['galaxy-silver-v1.png','galaxy-dust-v1.png','galaxy-nebula-v1.png'].map((file,index)=>loader.load(
       `${import.meta.env.BASE_URL}backgrounds/${file}`,
       () => {
         if(disposed)return
-        texturesLoaded+=1
-        if(texturesLoaded===3){sceneReady=true;syncFallback();scheduleRender()}
+        if(index===0)sceneReady=true
+        syncFallback()
+        scheduleRender()
       },
       undefined,
       () => { if (!disposed) { textureFailed = true; syncFallback() } },

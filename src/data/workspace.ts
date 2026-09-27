@@ -28,18 +28,56 @@ function classify(error: any): StoreError {
 
 export function createWorkspaceStore(client: SupabaseClient | null = supabase) {
   if (!client) throw new StoreError('configuration', 'Supabase 연결 설정이 없습니다.')
-  const owner = async () => {
-    const { data, error } = await client.auth.getUser()
-    if (error) throw new StoreError('auth', '로그인 세션을 확인할 수 없습니다.', error)
-    if (!data.user) throw new StoreError('auth', '로그인이 필요합니다.')
-    return data.user.id
-  }
   const run = async (action: (ownerId: string) => Promise<WorkspaceSnapshot>): Promise<WorkspaceSnapshot> => {
+    let unsubscribe: (() => void) | undefined
     try {
-      const before = await owner()
+      let identityGeneration = 0
+      let refreshGeneration = 0
+      let baseline: { ownerId: string; accessToken: string } | null = null
+      const signInsBeforeBaseline: Array<{ ownerId: string; accessToken: string }> = []
+      const { data: authSubscription } = client.auth.onAuthStateChange((event, session) => {
+        if (event === 'TOKEN_REFRESHED') {
+          refreshGeneration += 1
+          if (baseline && session?.user.id === baseline.ownerId && session.access_token) baseline.accessToken = session.access_token
+          else if (baseline && session?.user.id !== baseline.ownerId) identityGeneration += 1
+        }
+        else if (event === 'SIGNED_IN') {
+          const received = session?.user.id && session.access_token
+            ? { ownerId: session.user.id, accessToken: session.access_token }
+            : null
+          if (!received) identityGeneration += 1
+          else if (baseline) {
+            if (received.ownerId !== baseline.ownerId || received.accessToken !== baseline.accessToken) identityGeneration += 1
+          } else signInsBeforeBaseline.push(received)
+        } else if (event === 'SIGNED_OUT' || event === 'USER_UPDATED' || event === 'PASSWORD_RECOVERY' || event === 'MFA_CHALLENGE_VERIFIED') identityGeneration += 1
+      })
+      unsubscribe = () => authSubscription.subscription.unsubscribe()
+      const startGeneration = identityGeneration
+      const { data: remoteUser, error: userError } = await client.auth.getUser()
+      if (userError) throw new StoreError('auth', '로그인 세션을 확인할 수 없습니다.', userError)
+      if (!remoteUser.user) throw new StoreError('auth', '로그인이 필요합니다.')
+      const before = remoteUser.user.id
+      const { data: localSession, error: sessionError } = await client.auth.getSession()
+      if (sessionError) throw new StoreError('auth', '로컬 세션 상태를 확인할 수 없습니다.', sessionError)
+      const initialAccessToken = localSession.session?.access_token
+      if (initialAccessToken) {
+        baseline = { ownerId: before, accessToken: initialAccessToken }
+        if (signInsBeforeBaseline.some((received) => received.ownerId !== before || received.accessToken !== initialAccessToken)) identityGeneration += 1
+      }
+      if (identityGeneration !== startGeneration || localSession.session?.user.id !== before || !localSession.session.access_token) {
+        throw new StoreError('auth', '요청 시작 중 로그인 상태가 변경되어 작업을 중단했습니다.')
+      }
+      const accessToken = localSession.session.access_token
+      const startRefreshGeneration = refreshGeneration
       const result = await action(before)
-      const after = await owner()
-      if (before !== after) throw new StoreError('auth', '요청 중 로그인 계정이 변경되어 응답을 폐기했습니다.')
+      const { data: afterSession, error: afterError } = await client.auth.getSession()
+      if (afterError) throw new StoreError('auth', '요청 후 로그인 상태를 확인할 수 없습니다.', afterError)
+      if (identityGeneration !== startGeneration || afterSession.session?.user.id !== before) {
+        throw new StoreError('auth', '요청 중 로그인 계정이 변경되어 응답을 폐기했습니다.')
+      }
+      if (afterSession.session.access_token !== accessToken && refreshGeneration === startRefreshGeneration) {
+        throw new StoreError('auth', '인증 토큰이 갱신되었지만 인증 상태 변경을 확인하지 못해 응답을 폐기했습니다.')
+      }
       for (const table of ['projects','tasks','events','goals','goal_links'] as const) {
         if (!Array.isArray(result[table]) || result[table].some((row) => row.owner_id !== before)) {
           throw new StoreError('permission', '다른 계정 자료가 포함된 응답을 폐기했습니다.')
@@ -47,6 +85,7 @@ export function createWorkspaceStore(client: SupabaseClient | null = supabase) {
       }
       return result
     } catch (error) { throw classify(error) }
+    finally { unsubscribe?.() }
   }
   return {
     loadWorkspace: () => run(async () => {

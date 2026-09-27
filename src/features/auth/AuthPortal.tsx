@@ -31,14 +31,25 @@ export default function AuthPortal({ initialView }: { initialView: 'login' | 'ap
   const hadSession = useRef(false)
   const inspectionGeneration = useRef(0)
   const operationGeneration = useRef(0)
+  const inFlightInspectionKey = useRef<string | null>(null)
+  const completedInspectionKey = useRef<string | null>(null)
   const logoutRequested = useRef(false)
   const mounted = useRef(false)
   const mfaSetupInFlight = useRef(false)
 
-  const inspectSession = useCallback(async (session: Session | null, expired = false, preserveReady = false) => {
+  const inspectSession = useCallback(async (session: Session | null, expired = false, preserveReady = false, force = false) => {
     if (!supabase) return
+    const key = session ? `${session.user.id}:${session.access_token}` : null
+    if (!session) { inFlightInspectionKey.current = null; completedInspectionKey.current = null }
+    else if (!force && (inFlightInspectionKey.current === key || completedInspectionKey.current === key)) return
+    if (key) inFlightInspectionKey.current = key
     const generation = ++inspectionGeneration.current
-    const commit = (state: GateState) => { if (mounted.current && generation === inspectionGeneration.current) setGate(state) }
+    const commit = (state: GateState) => {
+      if (mounted.current && generation === inspectionGeneration.current) {
+        setGate(state)
+        if (key && state.phase !== 'checking' && state.phase !== 'error') completedInspectionKey.current = key
+      }
+    }
     if (!session) {
       enrollmentDraftRef.current = undefined
       commit({ phase: 'signed-out', session: null, message: expired ? '로그인 세션이 만료되었습니다. 다시 로그인해 주세요.' : '' })
@@ -77,6 +88,8 @@ export default function AuthPortal({ initialView }: { initialView: 'login' | 'ap
     } catch (error) {
       if (!mounted.current || generation !== inspectionGeneration.current) return
       commit({ phase: 'error', session, message: `인증 상태를 확인하지 못했습니다: ${error instanceof Error ? error.message : '연결 오류'}` })
+    } finally {
+      if (key && generation === inspectionGeneration.current && inFlightInspectionKey.current === key) inFlightInspectionKey.current = null
     }
   }, [])
   const enrollmentDraftRef = useRef<EnrollmentDraft | undefined>(undefined)
@@ -118,11 +131,11 @@ export default function AuthPortal({ initialView }: { initialView: 'login' | 'ap
         else if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'MFA_CHALLENGE_VERIFIED' || event === 'USER_UPDATED') {
           if(logoutRequested.current)return
           if(event==='SIGNED_IN'||event==='MFA_CHALLENGE_VERIFIED'){operationGeneration.current+=1;setWorking(false);setPassword('');if(event==='MFA_CHALLENGE_VERIFIED')setCode('')}
-          void inspectSession(session, false, event === 'TOKEN_REFRESHED')
+          void inspectSession(session, false, event === 'TOKEN_REFRESHED', event !== 'INITIAL_SESSION')
         }
       }, 0)
     })
-    return () => { active = false; mounted.current = false; inspectionGeneration.current += 1; subscription.unsubscribe() }
+    return () => { active = false; mounted.current = false; inspectionGeneration.current += 1; inFlightInspectionKey.current = null; completedInspectionKey.current = null; subscription.unsubscribe() }
   }, [inspectSession])
 
   const signIn = async (event: FormEvent<HTMLFormElement>) => {
@@ -272,7 +285,7 @@ export default function AuthPortal({ initialView }: { initialView: 'login' | 'ap
       const { data, error } = await supabase.auth.getSession()
       if (error) throw error
       if (!mounted.current || generation !== inspectionGeneration.current || operation !== operationGeneration.current) return
-      await inspectSession(data.session)
+      await inspectSession(data.session, false, false, true)
     } catch (error) {
       if (mounted.current && generation === inspectionGeneration.current && operation === operationGeneration.current) setGate({ phase: 'error', session: null, message: `세션을 다시 확인하지 못했습니다: ${error instanceof Error ? error.message : '연결 오류'}` })
     } finally { if (mounted.current && operation === operationGeneration.current) setWorking(false) }

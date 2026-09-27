@@ -1,8 +1,8 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
-import Portfolio from './features/portfolio/Portfolio'
-import AuthPortal from './features/auth/AuthPortal'
 
 const Dashboard = lazy(() => import('./features/dashboard/Dashboard'))
+const Portfolio = lazy(() => import('./features/portfolio/Portfolio'))
+const AuthPortal = lazy(() => import('./features/auth/AuthPortal'))
 
 function currentRoute() {
   const value = window.location.hash.replace(/^#\/?/, '')
@@ -42,7 +42,7 @@ export default function App() {
     }
   }, [])
 
-  if (route === 'login' || route === 'app') return <AuthPortal initialView={route} />
+  if (route === 'login' || route === 'app') return <Suspense fallback={<main className="cr-login"><p className="cr-login-card">인증 화면을 여는 중…</p></main>}><AuthPortal initialView={route} /></Suspense>
   if (route === 'demo') return <Suspense fallback={<div className="cr-loading">체험 화면을 여는 중…</div>}><Dashboard /></Suspense>
-  return <Portfolio />
+  return <Suspense fallback={<main className="cr-portfolio"><div className="cr-scene cr-scene-fallback" aria-hidden="true"/><div className="cr-loading">CloudRing 포트폴리오를 여는 중…</div></main>}><Portfolio /></Suspense>
 }

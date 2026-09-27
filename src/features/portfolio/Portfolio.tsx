@@ -1,5 +1,5 @@
 import { ArrowDown, ArrowUpRight, Orbit } from 'lucide-react'
-import { lazy, Suspense, useEffect, useRef, useState, type CSSProperties } from 'react'
+import { Fragment, lazy, Suspense, useEffect, useRef, useState, type CSSProperties } from 'react'
 import { animate } from 'animejs'
 import './portfolio.css'
 
@@ -191,13 +191,13 @@ export default function Portfolio() {
               <h3 className="cr-timeline-year-label"><span>{year.year}</span></h3>
               {year.dated.map((entry, index) => <article className={`cr-entry ${index % 2 ? 'cr-entry-left' : 'cr-entry-right'}`} data-reveal key={`${entry.date}-${entry.kind}`}>
                 <div className="cr-entry-node" aria-hidden="true"><span className="cr-entry-branch"/><i /></div>
-                  <div className="cr-entry-body"><span className="cr-entry-date cr-entry-part">{entry.date}</span>{entry.title ? <><p className="cr-entry-kind cr-entry-part">{entry.kind}</p><h4 className="cr-entry-award-title cr-entry-part">{entry.title}</h4></> : <h4 className="cr-entry-award-title cr-entry-contest-title cr-entry-part">{entry.kind}</h4>}<span className="cr-entry-tag cr-entry-part">{entry.tag}</span>{entry.body && <p className="cr-entry-part">{entry.body}</p>}{entry.project && <div className="cr-entry-project cr-entry-part"><p>{entry.project.description}</p><span>{entry.project.role}</span></div>}</div>
+                  <div className="cr-entry-body"><span className="cr-entry-date cr-entry-part">{entry.date}</span>{entry.title ? <Fragment key={`${entry.date}-${entry.title}`}><p className="cr-entry-kind cr-entry-part">{entry.kind}</p><h4 className="cr-entry-award-title cr-entry-part">{entry.title}</h4></Fragment> : <h4 className="cr-entry-award-title cr-entry-contest-title cr-entry-part">{entry.kind}</h4>}<span className="cr-entry-tag cr-entry-part">{entry.tag}</span>{entry.body && <p className="cr-entry-part">{entry.body}</p>}{entry.project && <div className="cr-entry-project cr-entry-part"><p>{entry.project.description}</p><span>{entry.project.role}</span></div>}</div>
               </article>)}
               {year.unknown.length > 0 && <><p className="cr-unknown-date-label"><span>월 미상</span></p>{year.unknown.map((entry, index) => {
                 const position = year.dated.length + index
                 return <article className={`cr-entry ${position % 2 ? 'cr-entry-left' : 'cr-entry-right'}`} data-reveal key={entry.title}>
                   <div className="cr-entry-node" aria-hidden="true"><span className="cr-entry-branch"/><i /></div>
-                  <div className="cr-entry-body"><span className="cr-entry-date cr-entry-part">월 미상</span>{entry.title ? <><p className="cr-entry-kind cr-entry-part">{entry.kind}</p><h4 className="cr-entry-award-title cr-entry-part">{entry.title}</h4></> : <h4 className="cr-entry-award-title cr-entry-contest-title cr-entry-part">{entry.kind}</h4>}<span className="cr-entry-tag cr-entry-part">{entry.tag}</span>{entry.body && <p className="cr-entry-part">{entry.body}</p>}</div>
+                  <div className="cr-entry-body"><span className="cr-entry-date cr-entry-part">월 미상</span>{entry.title ? <Fragment key={entry.title}><p className="cr-entry-kind cr-entry-part">{entry.kind}</p><h4 className="cr-entry-award-title cr-entry-part">{entry.title}</h4></Fragment> : <h4 className="cr-entry-award-title cr-entry-contest-title cr-entry-part">{entry.kind}</h4>}<span className="cr-entry-tag cr-entry-part">{entry.tag}</span>{entry.body && <p className="cr-entry-part">{entry.body}</p>}</div>
                 </article>
               })}</>}
             </section>
