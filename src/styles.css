@@ -1,0 +1,32 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap');
+
+:root {
+  font-family: Pretendard, 'Apple SD Gothic Neo', 'Noto Sans KR', Manrope, sans-serif;
+  color: #f1f5fb;
+  background: #000;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-optical-sizing: auto;
+  font-weight: 400;
+  --cr-canvas: #000;
+  --cr-surface: #121d2f;
+  --cr-raised: #1b2a41;
+  --cr-border: #354762;
+  --cr-text: #f1f5fb;
+  --cr-muted: #b0bfd2;
+  --cr-accent: #8bd5ff;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 100px; }
+body { margin: 0; min-width: 320px; min-height: 100vh; }
+button, a { font: inherit; }
+a { color: inherit; }
+button:focus-visible, a:focus-visible { outline: 2px solid var(--cr-accent); outline-offset: 4px; }
+::selection { color: #0b1220; background: #8bd5ff; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
