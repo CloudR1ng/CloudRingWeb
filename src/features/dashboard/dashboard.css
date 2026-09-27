@@ -74,3 +74,14 @@
 .dashboard-month-week .dashboard-mark b{font-weight:600}
 .dashboard-month-cell-items .dashboard-month-task-mark{pointer-events:auto;cursor:pointer}
 @media(max-width:600px){.dashboard-month-week .dashboard-month-event-bar{font-size:12px}.dashboard-month-week .dashboard-mark{font-size:0;line-height:0;color:transparent}}
+
+/* Weekly view keeps the date grid readable by stacking each item inside its column. */
+.dashboard-week-grid{overflow-x:auto;grid-template-columns:repeat(7,minmax(160px,1fr));overscroll-behavior-x:contain}
+.dashboard-week-col{min-width:0;overflow:hidden}
+.dashboard-week-col .dashboard-agenda-event{display:grid;grid-template-columns:minmax(0,1fr);gap:4px;margin:8px 0}
+.dashboard-week-col .dashboard-agenda-item{display:grid;grid-template-columns:minmax(0,1fr);align-content:start;gap:4px;min-width:0;width:100%;margin:0;padding:9px;border:1px solid rgba(220,225,235,.20);border-left:3px solid var(--cat-solid,#aeb3bc);border-radius:6px;overflow-wrap:anywhere;word-break:keep-all;text-align:left;font-family:inherit;font-size:15px;line-height:1.4}
+.dashboard-week-col .dashboard-agenda-item b{min-width:0;font-size:13px;font-weight:600;line-height:1.35;overflow-wrap:anywhere}
+.dashboard-week-col .dashboard-agenda-item span{min-width:0;font-size:15px;font-weight:600;line-height:1.45;overflow-wrap:anywhere;word-break:keep-all}
+.dashboard-week-col .dashboard-agenda-item small{min-width:0;margin:0;color:#c0c4cc;font-size:13px;line-height:1.35;white-space:normal;overflow-wrap:anywhere}
+.dashboard-week-col>.dashboard-agenda-item{margin:8px 0}.dashboard-week-col .dashboard-agenda-delete{grid-column:1;justify-self:end;width:auto;min-width:64px;min-height:44px;padding:0 12px;border-color:rgba(220,160,168,.24);background:rgba(82,37,43,.18);color:#d5bfc2}
+@media(max-width:600px){.dashboard-week-grid{grid-template-columns:repeat(7,minmax(160px,1fr))}.dashboard-week-col{min-height:0;padding:5px}.dashboard-week-col .dashboard-agenda-item{font-size:15px}.dashboard-week-col .dashboard-agenda-item span{font-size:15px}.dashboard-week-col .dashboard-agenda-item small,.dashboard-week-col .dashboard-agenda-item b{font-size:13px}}
