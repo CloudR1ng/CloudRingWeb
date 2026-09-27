@@ -1,8 +1,6 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap');
-
 :root {
-  font-family: Pretendard, 'Apple SD Gothic Neo', 'Noto Sans KR', Manrope, sans-serif;
-  color: #f1f5fb;
+  font-family: Pretendard, 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', system-ui, sans-serif;
+  color: #f2f3f5;
   background: #000;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -11,21 +9,21 @@
   font-optical-sizing: auto;
   font-weight: 400;
   --cr-canvas: #000;
-  --cr-surface: #121d2f;
-  --cr-raised: #1b2a41;
-  --cr-border: #354762;
-  --cr-text: #f1f5fb;
-  --cr-muted: #b0bfd2;
-  --cr-accent: #8bd5ff;
+  --cr-surface: #111214;
+  --cr-raised: #1a1b1e;
+  --cr-border: #414348;
+  --cr-text: #f2f3f5;
+  --cr-muted: #b1b5bd;
+  --cr-accent: #e1e3e7;
 }
 
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; scroll-padding-top: 100px; }
-body { margin: 0; min-width: 320px; min-height: 100vh; }
+body { margin: 0; min-width: 0; min-height: 100vh; }
 button, a { font: inherit; }
 a { color: inherit; }
 button:focus-visible, a:focus-visible { outline: 2px solid var(--cr-accent); outline-offset: 4px; }
-::selection { color: #0b1220; background: #8bd5ff; }
+::selection { color: #090a0c; background: #e1e3e7; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
