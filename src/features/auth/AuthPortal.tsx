@@ -1,5 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState, type CSSProperties, type FormEvent } from 'react'
-import { ArrowLeft, KeyRound, LockKeyhole, LogOut, ShieldCheck } from 'lucide-react'
+import { ArrowLeft, LockKeyhole, LogOut, ShieldCheck } from 'lucide-react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase, supabaseConfiguration } from '../../lib/supabase'
 import { resolveLoginEmail } from './loginIdentity'
@@ -262,10 +262,10 @@ export default function AuthPortal({ initialView }: { initialView: 'login' | 'ap
         </div>}
 
         {supabase && gate.phase === 'ready' && <div className="cr-auth-ready">
-          <p><ShieldCheck size={18} /> 소유자 계정 · MFA AAL2 확인됨</p>
+          <p><ShieldCheck size={18} /> 소유자 확인과 2단계 인증 완료</p>
           <span>{gate.session?.user.email}</span>
-          <div className="cr-auth-warning"><KeyRound size={16} /> 데이터 저장 어댑터는 아직 연결되지 않았습니다. 현재는 인증과 RLS 연결 상태만 확인할 수 있습니다.</div>
-          {initialView !== 'app' && <button className="cr-login-demo" type="button" onClick={goToApp}>운영 연결 상태 보기</button>}
+          <div className="cr-auth-warning">로그인 확인이 완료되었습니다. 개인 공간에서 목표와 일정을 관리하세요.</div>
+          {initialView !== 'app' && <button className="cr-login-demo" type="button" onClick={goToApp}>개인 공간 열기</button>}
           <button className="cr-auth-logout" type="button" onClick={() => void signOut()} disabled={working}><LogOut size={15} /> 로그아웃</button>
         </div>}
       </section>
