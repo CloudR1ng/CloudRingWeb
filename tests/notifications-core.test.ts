@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { dedupeKey, deliveryOutcome, isAllowedPushEndpoint, isRetryablePushStatus, retryDelaySeconds, safeNotificationTarget, seoulParts, sourceIsCurrent, summarizeToday } from '../src/features/notifications/core'
+import { dailySummaryBody, dedupeKey, deliveryOutcome, isAllowedPushEndpoint, isRetryablePushStatus, retryDelaySeconds, safeNotificationTarget, seoulParts, sourceIsCurrent, summarizeToday } from '../src/features/notifications/core'
 
 describe('notification core', () => {
   it('uses Seoul day boundaries and de-duplicates items that match multiple reminders', () => {
@@ -17,6 +17,13 @@ describe('notification core', () => {
     expect(sourceIsCurrent(expected,{id:'x',version:4,status:'cancelled'},until,now)).toBe(false)
     expect(sourceIsCurrent(expected,{id:'x',version:4,deleted:true},until,now)).toBe(false)
     expect(sourceIsCurrent(expected,{id:'x',version:4},now,now)).toBe(false)
+  })
+  it('keeps daily counts when private item details are disabled and bounds disclosed names', () => {
+    const counts={tasks:2,events:1,projects:0,goals:3}
+    const titles=['과제 이름','회의 이름','목표 이름','표시하지 않을 항목']
+    expect(dailySummaryBody(counts,titles,false)).toBe('오늘 2개 할 일 · 1개 일정 · 0개 프로젝트 마감 · 3개 목표 마감이 있습니다.')
+    expect(dailySummaryBody(counts,titles,true)).toBe('오늘 2개 할 일 · 1개 일정 · 0개 프로젝트 마감 · 3개 목표 마감이 있습니다. 과제 이름 · 회의 이름 · 목표 이름')
+    expect(dailySummaryBody(counts,['x'.repeat(60)],true).endsWith('x'.repeat(48))).toBe(true)
   })
   it('limits retries and permits only known HTTPS push providers', () => {
     expect([1,2,5,9].map(retryDelaySeconds)).toEqual([60,120,960,960])

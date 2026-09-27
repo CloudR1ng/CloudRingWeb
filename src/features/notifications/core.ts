@@ -7,6 +7,12 @@ export function seoulParts(instant:Date):{date:string;time:string}{
   return {date:`${get('year')}-${get('month')}-${get('day')}`,time:`${get('hour')}:${get('minute')}`}
 }
 export function summarizeToday<T extends {id:string}>(items:T[]):{count:number;unique:T[]}{const seen=new Set<string>();const unique=items.filter(item=>{if(seen.has(item.id))return false;seen.add(item.id);return true});return {count:unique.length,unique}}
+export function dailySummaryBody(counts:{tasks:number;events:number;projects:number;goals:number},titles:string[]=[],includeDetails=false):string{
+  const parts=[`${counts.tasks}개 할 일`,`${counts.events}개 일정`,`${counts.projects}개 프로젝트 마감`,`${counts.goals}개 목표 마감`]
+  const summary=`오늘 ${parts.join(' · ')}이 있습니다.`
+  const safeTitles=includeDetails?titles.slice(0,3).map(title=>String(title).slice(0,48)):[]
+  return safeTitles.length?`${summary} ${safeTitles.join(' · ')}`:summary
+}
 export function sourceIsCurrent(expected:ReminderSource,latest:ReminderSource|null,expiresAt:Date,now:Date):boolean{if(expiresAt.getTime()<=now.getTime()||!latest||latest.deleted||latest.version!==expected.version)return false;return latest.status!=='completed'&&latest.status!=='cancelled'}
 export function dedupeKey(input:{owner:string;kind:string;date?:string;id?:string;version?:number}):string{return input.date?`${input.kind}:${input.date}`:`${input.kind}:${input.id}:${input.version}`}
 export function retryDelaySeconds(attempt:number):number{if(!Number.isInteger(attempt)||attempt<1)return 30;return Math.min(1800,30*2**Math.min(attempt,5))}

@@ -1,6 +1,6 @@
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2.117.2'
 import webPush from 'npm:web-push@3.6.7'
-import { deliveryOutcome, isAllowedPushEndpoint, safeNotificationTarget, seoulParts, sourceIsCurrent, summarizeToday } from '../../../src/features/notifications/core.ts'
+import { dailySummaryBody, deliveryOutcome, isAllowedPushEndpoint, safeNotificationTarget, seoulParts, sourceIsCurrent, summarizeToday } from '../../../src/features/notifications/core.ts'
 
 type Claimed = {delivery_id:string;job_id:string;owner_id:string;device_id:string;endpoint:string;p256dh:string;auth_secret:string;kind:string;source_table:string|null;source_id:string|null;source_version:number|null;scheduled_at:string;expires_at:string;attempt_count:number;include_details:boolean;lease_token:string}
 type SourceStatus = 'todo'|'in_progress'|'paused'|'completed'|'cancelled'
@@ -38,25 +38,21 @@ async function dailyMessage(admin:SupabaseClient,job:Claimed,appUrl:string,inclu
   const today=seoulParts(new Date()).date
   const [{data:tasks,error:taskError},{data:events,error:eventError},{data:projects,error:projectError},{data:goals,error:goalError}]=await Promise.all([
     admin.from('tasks').select('id,title,status,planned_on,planned_at,due_on,due_at').eq('owner_id',job.owner_id),
-    admin.from('events').select('id,title,all_day,event_on,starts_at,timezone,location').eq('owner_id',job.owner_id),
+    admin.from('events').select('id,title,all_day,event_on,starts_at,ends_at,timezone,location').eq('owner_id',job.owner_id),
     admin.from('projects').select('id,title,due_on,status').eq('owner_id',job.owner_id),
-    admin.from('goals').select('id,title,due_on,status').eq('owner_id',job.owner_id),
+    admin.from('goals').select('id,title,ends_on,progress_mode,manual_progress,current_value,target_value').eq('owner_id',job.owner_id),
   ])
   if(taskError||eventError||projectError||goalError)throw taskError??eventError??projectError??goalError
   const tasksToday=(tasks??[]).filter((task:any)=>task.status!=='completed'&&task.status!=='cancelled'&&((task.planned_on===today)||(task.planned_at&&seoulParts(new Date(task.planned_at)).date===today)||(task.due_on===today)||(task.due_at&&seoulParts(new Date(task.due_at)).date===today)))
   const eventsToday=(events??[]).filter((event:any)=>event.all_day?event.event_on===today:!!event.starts_at&&!!event.ends_at&&seoulParts(new Date(event.starts_at)).date<=today&&seoulParts(new Date(event.ends_at)).date>=today)
   const projectsToday=(projects??[]).filter((project:any)=>project.status!=='completed'&&project.due_on===today)
-  const goalsToday=(goals??[]).filter((goal:any)=>goal.status!=='completed'&&goal.status!=='cancelled'&&goal.due_on===today)
+  const goalsToday=(goals??[]).filter((goal:any)=>goal.ends_on===today&&!(goal.progress_mode==='manual'&&goal.manual_progress===100)&&!(goal.progress_mode==='target_value'&&Number(goal.current_value)>=Number(goal.target_value)))
   const uniqueTasks=summarizeToday(tasksToday).unique
   const uniqueEvents=summarizeToday(eventsToday).unique
   const uniqueProjects=summarizeToday(projectsToday).unique
   const uniqueGoals=summarizeToday(goalsToday).unique
-  const parts=[`${uniqueTasks.length}개 할 일`,`${uniqueEvents.length}개 일정`,`${uniqueProjects.length}개 프로젝트 마감`,`${uniqueGoals.length}개 목표 마감`]
-  let body=`오늘 ${parts.join(' · ')}이 있습니다.`
-  if(includeDetails){
-    const names=[...uniqueTasks,...uniqueEvents,...uniqueProjects,...uniqueGoals].slice(0,3).map((item:any)=>String(item.title).slice(0,48))
-    if(names.length)body+=` ${names.join(' · ')}`
-  }
+  const names=includeDetails?[...uniqueTasks,...uniqueEvents,...uniqueProjects,...uniqueGoals].map((item:any)=>String(item.title)):[]
+  const body=dailySummaryBody({tasks:uniqueTasks.length,events:uniqueEvents.length,projects:uniqueProjects.length,goals:uniqueGoals.length},names,includeDetails)
   return {title:'CloudRing 오늘의 요약',body,url:appUrl,tag:`cloudring-${job.job_id}`}
 }
 async function upToDateSettings(admin:SupabaseClient,job:Claimed){
@@ -115,7 +111,7 @@ Deno.serve(async request=>{
         const valid=sourceIsCurrent({id:job.source_id!,version:job.source_version!},latest?{id:latest.id,version:latest.version,status:latest.status??undefined}:null,new Date(job.expires_at),new Date())
         if(!valid){await finish('obsolete');obsolete+=1;needsReplan=true;continue}
       }
-      if(job.kind==='daily_digest'&&!currentSettings.includeDetails){message.body=genericMessage(job,appUrl).body}
+      if(job.kind==='daily_digest'&&!currentSettings.includeDetails){message=await dailyMessage(admin,job,appUrl,false)}
       if(job.source_table&&!currentSettings.includeDetails)message.body=genericMessage(job,appUrl).body
       message.tag=`cloudring-${job.kind}-${job.source_id??job.job_id}`
       try{
